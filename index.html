@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale-1" />
+  <title>BPS 5 – Klassenkiosk: Verkaufsrechner Pro Admin</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"></script>
+  <style>
+    :root{
+      --bg: #0e0f17;
+      --panel: #151826;
+      --card: #1b2032;
+      --muted: #96a1c2;
+      --text: #e9edf8;
+      --accent: #5de2a5;
+      --accent-2: #ffb703;
+      --danger: #ff6b6b;
+      --shadow: 0 8px 24px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 100% -10%, #2b2f55 0%, transparent 60%),
+        radial-gradient(1200px 600px at -10% 100%, #23314a 0%, transparent 60%),
+        linear-gradient(180deg, #0b0d14, #0e0f17);
+      min-height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    header{
+      padding:18px 16px 0;
+      max-width:1400px;
+      width:100%;
+      margin:0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .title{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:baseline;
+      gap:.6rem 1rem;
+    }
+    h1{
+      margin:0;
+      font-size: clamp(1.2rem, 1rem + 2.4vw, 2.2rem);
+      letter-spacing:.3px;
+      font-weight:800;
+      background: linear-gradient(90deg, #fff, #cfe7ff);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .subtitle{
+      color:var(--muted);
+      font-size:.95rem;
+    }
+    main{
+      padding:8px 12px 130px;
+      max-width:1400px;
+      width:100%;
+      margin:0 auto;
+      flex: 1;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap:14px;
+    }
+    .card{
+      position:relative;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+      display:flex;
+      flex-direction: column;
+      gap:12px;
+      align-items:center;
+      text-align: center;
+      transition: transform .1s ease, box-shadow .2s ease, background .2s ease;
+      cursor:pointer;
+      user-select:none;
+      aspect-ratio: 1 / 1;
+      justify-content: center;
+    }
+    .card:active{ transform:scale(.97) }
+    .icon{
+      width:60px; height:60px;
+      background:transparent;
+      display:grid; place-items:center;
+      overflow:hidden;
+    }
+    .icon svg{ width:100%; height:100%; }
+    .info{ min-width:0 }
+    .name{ font-weight:700; letter-spacing:.2px; font-size: 1.05rem; }
+    .price{
+      color:var(--muted);
+      font-size:.95rem;
+      margin-top:2px;
+    }
+    .badge{
+      position:absolute; top:10px; right:10px;
+      background:linear-gradient(180deg, var(--accent-2), #ff8a00);
+      color:#111; font-weight:900; font-size:.9rem; padding: 5px 10px;
+      border-radius:999px; 
+      min-width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      box-sizing: border-box;
+      transform: scale(0);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .card.hasQty .badge{ transform: scale(1); }
+
+    .summary{
+      position: fixed; left:0; right:0; bottom:0;
+      background: linear-gradient(180deg, rgba(13,15,25,.2), rgba(13,15,25,.8)) , var(--panel);
+      border-top:1px solid rgba(255,255,255,.08);
+      padding:12px;
+      z-index:5;
+      backdrop-filter: blur(8px);
+    }
+    .sumBar{
+      max-width:1400px; margin:0 auto;
+      display:grid; grid-template-columns: 1fr auto; gap:16px; align-items:center;
+    }
+    .totals{
+      display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;
+      cursor: pointer;
+    }
+    .total{
+      font-size: clamp(1.5rem, 2vw + 1rem, 2.5rem);
+      font-weight:900;
+      letter-spacing:.4px;
+      color:#fff;
+    }
+    .sub{
+      color:var(--muted);
+      font-weight:600;
+    }
+    .controls{
+      display:flex; gap:12px; flex-wrap:wrap; justify-self:end;
+    }
+    .pill{
+      border:none; cursor:pointer; padding:12px 20px; border-radius:999px;
+      background:#202842; color:#e9edf8; font-weight:700; letter-spacing:.2px;
+      border:1px solid rgba(255,255,255,.08);
+      font-size: 1rem;
+      transition: transform 0.1s ease;
+    }
+    .pill:active { transform: scale(0.96); }
+    .pill.accent{
+      background:linear-gradient(180deg, var(--accent), #34d59a);
+      color:#071216; border:none; box-shadow:0 8px 18px rgba(93,226,165,.35);
+      font-size: 1.2rem;
+      padding: 16px 32px;
+    }
+    .pill.red{
+      background:linear-gradient(180deg, #ff8b8b, #ff6b6b);
+      color:#150808; border:none; box-shadow:0 8px 18px rgba(255,107,107,.35);
+    }
+    .pill:disabled {
+      opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none;
+    }
+
+    /* Modals Allgemein */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 100; backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.visible { opacity: 1; pointer-events: auto; }
+    .modal-box {
+      background: var(--card); border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.1);
+      width: 90%; max-width: 500px;
+      display: flex; flex-direction: column; gap: 12px;
+      max-height: 80vh;
+    }
+    .modal-box h3 { margin: 0 0 10px; }
+    .modal-content { overflow-y: auto; flex: 1; }
+    .modal-controls { display:flex; justify-content: flex-end; margin-top: 16px;}
+
+    /* Spezifische Modal-Stile */
+    .cartRow, .product-row{
+      display:grid; grid-template-columns: 1fr 100px 100px; gap:8px; align-items:center;
+      padding:12px 0; border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .cartRow:last-child, .product-row:last-child { border-bottom: none; }
+    .cartHead, .product-head{ font-weight:800; }
+    
+    #productManagementModal .product-row { grid-template-columns: 40px 1fr 100px 50px; }
+    #productManagementModal .product-head { grid-template-columns: 40px 1fr 100px 50px; }
+    #addProductForm {
+        padding: 16px; margin-top: 20px;
+        background: rgba(0,0,0,0.2); border-radius: 12px;
+        display: grid; grid-template-columns: 1fr 100px 100px auto; gap: 10px;
+        align-items: center;
+    }
+    .form-input {
+      font-family: inherit; background: var(--panel); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 10px; font-size: 1rem; color: var(--text);
+      min-width: 0; /* Verhindert Überlaufen in Flex/Grid */
+    }
+
+    .payment-modal { background: var(--panel); text-align: center; }
+    .payment-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center; margin-bottom: 24px; }
+    .payment-label { font-size: 1.1rem; color: var(--muted); text-align: right; }
+    .payment-value { font-size: 2rem; font-weight: 800; text-align: left; }
+    #paymentTotal, #paymentChange { background: linear-gradient(90deg, var(--accent), #84fab0); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    #paymentChange { background: linear-gradient(90deg, var(--accent-2), #ffda7b); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .payment-input-group input {
+        font-family: inherit; width: 100%; background: var(--card);
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+        padding: 16px; font-size: 2rem; font-weight: 700;
+        color: var(--text); text-align: center; outline: none;
+    }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .payment-controls { display: flex; flex-direction: column; gap: 12px; margin-top: 24px;}
+
+
+    /* Tablet- & Desktop-Optimierungen */
+    @media (min-width: 768px){
+      .grid{
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+      }
+      .icon { width: 80px; height: 80px; }
+      .name { font-size: 1.2rem; }
+      .sumBar { grid-template-columns: 1fr auto auto; }
+    }
+    
+    /* Mobil-Optimierung für das Produktformular */
+    @media (max-width: 600px) {
+        #addProductForm {
+            grid-template-columns: 1fr; /* Alle Felder untereinander */
+            gap: 12px;
+        }
+        #addProductForm button {
+            width: 100%;
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>Klassenkiosk Pro</h1>
+      <div class="subtitle">Verkaufsrechner von <strong>Herr El Makhoukhi</strong></div>
+    </div>
+    <button class="pill" id="manageProductsBtn">⚙️ Produkte verwalten</button>
+  </header>
+
+  <main>
+    <div id="grid" class="grid" aria-live="polite"></div>
+  </main>
+
+  <div class="summary">
+    <div class="sumBar">
+      <div class="totals" id="totalsDisplay">
+        <div class="total" id="totalEuro">0,00 €</div>
+        <div class="sub"><span id="totalItems">0</span> Artikel</div>
+      </div>
+      <div class="controls">
+        <button class="pill red" id="reset">Zurücksetzen</button>
+        <button class="pill accent" id="payBtn" disabled>Bezahlen</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cartModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3>Warenkorb-Übersicht</h3>
+      <div id="cartContent" class="modal-content"></div>
+      <div class="modal-controls">
+          <button class="pill" id="closeCartModal">Schließen</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="paymentModal" class="modal-overlay">
+      <div class="modal-box payment-modal">
+          <div id="paymentView">
+              <h2>Abrechnung</h2>
+              <div class="payment-row">
+                  <div class="payment-label">Gesamt:</div>
+                  <div class="payment-value" id="paymentTotal">0,00 €</div>
+              </div>
+              <div class="payment-input-group">
+                  <label for="givenAmount" class="payment-label" style="display:block; text-align:center; margin-bottom: 8px;">Gegeben:</label>
+                  <input type="text" inputmode="decimal" id="givenAmount" placeholder="0,00">
+              </div>
+              <div class="payment-controls">
+                  <button class="pill" id="closePaymentModal">Abbrechen</button>
+              </div>
+          </div>
+          <div id="changeView" style="display:none;">
+              <h2>Rückgeld</h2>
+              <div class="payment-row">
+                  <div class="payment-label">Rückgeld:</div>
+                  <div class="payment-value" id="paymentChange" style="font-size: 3rem;">0,00 €</div>
+              </div>
+              <div class="payment-controls">
+                  <button class="pill accent" id="newTransactionBtn">Nächste Transaktion</button>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <div id="productManagementModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 800px;">
+        <h3>Produkte verwalten</h3>
+        <div id="productList" class="modal-content"></div>
+        <form id="addProductForm">
+            <input type="text" id="newProductName" placeholder="Produktname" class="form-input" required>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" id="newProductPrice" placeholder="Preis (in Cent)" class="form-input" required>
+            <select id="newProductIcon" class="form-input">
+                <option value="genericSnack">Snack (Generisch)</option>
+                <option value="genericDrink">Getränk (Generisch)</option>
+                <option value="genericCandy">Süßigkeit (Generisch)</option>
+            </select>
+            <button type="submit" class="pill accent" style="padding: 10px 20px;">+</button>
+        </form>
+        <div class="modal-controls">
+            <button class="pill" id="closeProductModal">Fertig</button>
+        </div>
+    </div>
+</div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const defaultProducts = [
+        { id:"apfelschorle", name:"Apfelschorle", price:80, icon:"apfelschorle" },
+        { id:"muesliriegel", name:"Müsliriegel", price:30, icon:"muesliriegel" },
+        { id:"milchmaeuse", name:"Milchmäuse", price:5,  icon:"milchmaeuse" },
+        { id:"maoam", name:"Maoam", price:20, icon:"maoam" },
+        { id:"goldbaeren", name:"Goldbären", price:20, icon:"goldbaeren" },
+        { id:"kinderbueno", name:"Kinderbueno", price:60, icon:"kinderbueno" },
+        { id:"trinkpaeckchen", name:"Trinkpäckchen", price:40, icon:"trinkpaeckchen" },
+        { id:"schokoriegel", name:"Schokoriegel", price:30, icon:"schokoriegel" },
+        { id:"schokobroetchen",name:"Schokobrötchen", price:40, icon:"schokobroetchen" },
+      ];
+
+      let products = [];
+      let qty = {};
+      const PRODUCTS_STORAGE_KEY = 'kiosk-products';
+
+      const EUR = new Intl.NumberFormat('de-DE', { style:'currency', currency:'EUR' });
+      const grid = document.getElementById('grid');
+      const totalEuroEl = document.getElementById('totalEuro');
+      const totalItemsEl = document.getElementById('totalItems');
+      const resetBtn = document.getElementById('reset');
+      const payBtn = document.getElementById('payBtn');
+      const totalsDisplay = document.getElementById('totalsDisplay');
+      
+      const cartModal = document.getElementById('cartModal');
+      const cartContent = document.getElementById('cartContent');
+      const closeCartModalBtn = document.getElementById('closeCartModal');
+      const paymentModal = document.getElementById('paymentModal');
+      const paymentView = document.getElementById('paymentView');
+      const changeView = document.getElementById('changeView');
+      const paymentTotalEl = document.getElementById('paymentTotal');
+      const givenAmountInput = document.getElementById('givenAmount');
+      const paymentChangeEl = document.getElementById('paymentChange');
+      const closePaymentModalBtn = document.getElementById('closePaymentModal');
+      const newTransactionBtn = document.getElementById('newTransactionBtn');
+      
+      const manageProductsBtn = document.getElementById('manageProductsBtn');
+      const productManagementModal = document.getElementById('productManagementModal');
+      const productList = document.getElementById('productList');
+      const addProductForm = document.getElementById('addProductForm');
+      const newProductName = document.getElementById('newProductName');
+      const newProductPrice = document.getElementById('newProductPrice');
+      const newProductIcon = document.getElementById('newProductIcon');
+      const closeProductModalBtn = document.getElementById('closeProductModal');
+
+      let audioReady = false;
+      let synth, removeSynth;
+
+      function initAudio() {
+        if (typeof Tone === 'undefined') return;
+        if (!audioReady) {
+          Tone.start().then(() => {
+            synth = new Tone.Synth().toDestination();
+            removeSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+            audioReady = true;
+          });
+        }
+      }
+      document.body.addEventListener('click', initAudio, { once: true });
+
+      function iconSVG(kind){
+          switch(kind){
+              case 'genericSnack': return `<svg viewBox="0 0 64 64" fill="none" stroke="#d9a25f" stroke-width="3"><path d="M12 20 H52 V44 H12 Z" rx="8" stroke-linejoin="round" /><path d="M20 28 L32 36 L44 28" stroke-linecap="round" /></svg>`;
+              case 'genericDrink': return `<svg viewBox="0 0 64 64" fill="none" stroke="#4cc9f0" stroke-width="3"><path d="M16 12 H48 L44 52 H20 Z" stroke-linejoin="round" /><path d="M24 20 H40" stroke-linecap="round" /><path d="M32 12 V8" stroke-linecap="round" /></svg>`;
+              case 'genericCandy': return `<svg viewBox="0 0 64 64" fill="none" stroke="#ff8fb1" stroke-width="3"><path d="M32 20 C 40 20, 44 28, 44 32 S 40 44, 32 44 S 20 40, 20 32 S 24 20, 32 20 Z" /><path d="M12 32 H20 M44 32 H52" stroke-linecap="round" /></svg>`;
+              case 'apfelschorle': return `<svg viewBox="0 0 64 64" fill="none"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#98fb98"/><stop offset="100%" stop-color="#58d66f"/></linearGradient></defs><rect x="22" y="8" width="20" height="12" rx="6" fill="#9fb3ff" opacity=".35"/><rect x="18" y="16" width="28" height="40" rx="8" fill="url(#g1)" stroke="#2b6e44" stroke-width="2"/><circle cx="32" cy="38" r="10" fill="#e83f3f" stroke="#a22020" stroke-width="2"/><path d="M32 28c5-6 10-6 14-5" stroke="#2b6e44" stroke-width="2" stroke-linecap="round"/><circle cx="28" cy="36" r="2" fill="#fff" opacity=".6"/></svg>`;
+              case 'muesliriegel': return `<svg viewBox="0 0 64 64" fill="none"><rect x="10" y="18" width="44" height="28" rx="8" fill="#c18f5a" stroke="#845a2a" stroke-width="2"/><g fill="#f5e1b5" opacity=".9"><ellipse cx="20" cy="30" rx="3" ry="2"/><ellipse cx="28" cy="38" rx="2.5" ry="2"/><ellipse cx="38" cy="30" rx="3" ry="2"/><ellipse cx="46" cy="36" rx="2.5" ry="2"/><ellipse cx="34" cy="34" rx="2" ry="1.6"/></g></svg>`;
+              case 'milchmaeuse': return `<svg viewBox="0 0 64 64" fill="none"><rect x="8" y="20" width="48" height="24" rx="12" fill="#ffffff" stroke="#cdd6f4" stroke-width="2"/><circle cx="22" cy="28" r="6" fill="#ffffff" stroke="#cdd6f4" stroke-width="2"/><circle cx="42" cy="28" r="6" fill="#ffffff" stroke="#cdd6f4" stroke-width="2"/><circle cx="28" cy="34" r="2" fill="#444"/><circle cx="36" cy="34" r="2" fill="#444"/><path d="M28 40c3 2 5 2 8 0" stroke="#888" stroke-width="2" stroke-linecap="round"/></svg>`;
+              case 'maoam': return `<svg viewBox="0 0 64 64" fill="none"><path d="M6 32l10-8v16L6 32z" fill="#ff8fb1"/><rect x="16" y="20" width="32" height="24" rx="6" fill="#ff5c8a" stroke="#b63b5c" stroke-width="2"/><path d="M58 32l-10-8v16l10-8z" fill="#ff8fb1"/><rect x="24" y="26" width="16" height="12" rx="3" fill="#fff" opacity=".6"/></svg>`;
+              case 'goldbaeren': return `<svg viewBox="0 0 64 64" fill="none"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffd34d"/><stop offset="100%" stop-color="#ffb703"/></linearGradient></defs><circle cx="22" cy="18" r="8" fill="url(#g2)" stroke="#b97b00" stroke-width="2"/><circle cx="42" cy="18" r="8" fill="url(#g2)" stroke="#b97b00" stroke-width="2"/><rect x="18" y="20" width="28" height="28" rx="14" fill="url(#g2)" stroke="#b97b00" stroke-width="2"/><circle cx="28" cy="32" r="2" fill="#6b4d00"/><circle cx="36" cy="32" r="2" fill="#6b4d00"/><circle cx="32" cy="38" r="3" fill="#6b4d00"/></svg>`;
+              case 'kinderbueno': return `<svg viewBox="0 0 64 64" fill="none"><rect x="10" y="22" width="44" height="8" rx="4" fill="#8b4s13" /><rect x="10" y="34" width="44" height="8" rx="4" fill="#8b4513" /><g stroke="#5a2d0c" stroke-width="3" opacity=".8"><path d="M12 26h40" /><path d="M12 38h40" /></g><g fill="#e9d5c8"><rect x="12" y="23" width="8" height="6" rx="3"/><rect x="44" y="35" width="8" height="6" rx="3"/></g></svg>`;
+              case 'trinkpaeckchen': return `<svg viewBox="0 0 64 64" fill="none"><rect x="18" y="16" width="28" height="36" rx="6" fill="#4cc9f0" stroke="#256c88" stroke-width="2"/><path d="M38 12c6-6 10-6 14-4" stroke="#cfe7ff" stroke-width="3" stroke-linecap="round" opacity=".7"/><rect x="2
