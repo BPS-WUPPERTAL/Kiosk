@@ -2077,7 +2077,7 @@
       // ═══════════════════════════════════════════════════════════
       const CONFIG = {
         STORAGE_PREFIX: 'klassenkiosk_v3_',
-        MAX_IMAGE_SIZE: 500 * 1024, // 500KB
+        MAX_IMAGE_SIZE: 500 * 1024,
         IMAGE_QUALITY: 0.7,
         MAX_IMAGE_DIMENSION: 400,
         TOAST_DURATION: 3000,
@@ -2091,16 +2091,19 @@
         SETTINGS: CONFIG.STORAGE_PREFIX + 'settings'
       };
 
+      // ═══════════════════════════════════════════════════════════
+      // ⭐ PRODUCTOS CON RUTAS DE IMÁGENES CORREGIDAS ⭐
+      // ═══════════════════════════════════════════════════════════
       const DEFAULT_PRODUCTS = [
-        { id: "p_apfelschorle", name: "Apfelschorle", price: 80, image: null },
-        { id: "p_muesliriegel", name: "Müsliriegel", price: 30, image: null },
-        { id: "p_milchmaeuse", name: "Milchmäuse", price: 5, image: null },
-        { id: "p_maoam", name: "Maoam", price: 20, image: null },
-        { id: "p_goldbaeren", name: "Goldbären", price: 20, image: null },
-        { id: "p_kinderbueno", name: "Kinderbueno", price: 60, image: null },
-        { id: "p_trinkpaeckchen", name: "Trinkpäckchen", price: 40, image: null },
-        { id: "p_schokoriegel", name: "Schokoriegel", price: 30, image: null },
-        { id: "p_schokobroetchen", name: "Schokobrötchen", price: 40, image: null },
+        { id: "p_apfelschorle", name: "Apfelschorle", price: 80, image: "assets/images/products/apfelschorle.png" },
+        { id: "p_muesliriegel", name: "Müsliriegel", price: 30, image: "assets/images/products/muesliriegel.png" },
+        { id: "p_milchmaeuse", name: "Milchmäuse", price: 5, image: "assets/images/products/milchmaeuse.png" },
+        { id: "p_maoam", name: "Maoam", price: 20, image: "assets/images/products/maoam.png" },
+        { id: "p_goldbaeren", name: "Goldbären", price: 20, image: "assets/images/products/goldbaeren.png" },
+        { id: "p_kinderbueno", name: "Kinderbueno", price: 60, image: "assets/images/products/kinderbueno.png" },
+        { id: "p_trinkpaeckchen", name: "Trinkpäckchen", price: 40, image: "assets/images/products/trinkpaeckchen.png" },
+        { id: "p_schokoriegel", name: "Schokoriegel", price: 30, image: "assets/images/products/schokoriegel.png" },
+        { id: "p_schokobroetchen", name: "Schokobrötchen", price: 40, image: "assets/images/products/schokobroetchen.png" },
       ];
 
       // ═══════════════════════════════════════════════════════════
@@ -2164,7 +2167,6 @@
         DOM.syncDot = $('#syncDot');
         DOM.syncText = $('#syncText');
         
-        // Stats
         DOM.statTodayRevenue = $('#statTodayRevenue');
         DOM.statTodaySales = $('#statTodaySales');
         DOM.statTodayItems = $('#statTodayItems');
@@ -2173,7 +2175,6 @@
         DOM.chartLabels = $('#chartLabels');
         DOM.topProducts = $('#topProducts');
         
-        // Inventory stats
         DOM.invTotalProducts = $('#invTotalProducts');
         DOM.invNeededProducts = $('#invNeededProducts');
         DOM.invTotalItems = $('#invTotalItems');
@@ -2320,7 +2321,6 @@
         state.inventory = loadFromStorage(STORAGE_KEYS.INVENTORY, {});
         state.settings = loadFromStorage(STORAGE_KEYS.SETTINGS, { soundEnabled: true });
         
-        // Initialize cart
         state.cart = {};
         state.products.forEach(p => state.cart[p.id] = 0);
       }
@@ -2408,10 +2408,8 @@
             panels.forEach(p => p.classList.remove('active'));
             $(`#${tabId}-panel`).classList.add('active');
 
-            // Bottom bar visibility
             DOM.bottomBar.classList.toggle('hidden', tabId !== 'verkauf');
 
-            // Refresh content
             if (tabId === 'dashboard') renderDashboard();
             if (tabId === 'verlauf') renderHistory();
             if (tabId === 'produkte') renderProductList();
@@ -2558,7 +2556,6 @@
           DOM.cancelPaymentBtn.classList.add('hidden');
           DOM.nextTransactionBtn.classList.remove('hidden');
           
-          // Record transaction
           recordTransaction(totals, given, change);
           
           playSound('success');
@@ -2588,7 +2585,6 @@
 
         state.history.unshift(transaction);
         
-        // Keep only last 1000 transactions to save space
         if (state.history.length > 1000) {
           state.history = state.history.slice(0, 1000);
         }
@@ -2722,7 +2718,6 @@
           return;
         }
 
-        // Group by date
         const grouped = {};
         filtered.forEach(t => {
           const dateKey = formatDate(t.timestamp);
@@ -2930,7 +2925,6 @@
           `;
         }).join('');
 
-        // Event listeners
         DOM.inventoryList.querySelectorAll('.inventory-checkbox').forEach(cb => {
           cb.addEventListener('change', () => {
             const id = cb.dataset.id;
@@ -3043,7 +3037,7 @@ Erstellt: Herr El Makhoukhi`;
       }
 
       // ═══════════════════════════════════════════════════════════
-      // EXPORT / IMPORT
+      // EXPORT
       // ═══════════════════════════════════════════════════════════
       function exportData() {
         const data = {
@@ -3069,11 +3063,9 @@ Erstellt: Herr El Makhoukhi`;
       // EVENT LISTENERS
       // ═══════════════════════════════════════════════════════════
       function setupEventListeners() {
-        // Audio init
         document.body.addEventListener('click', initAudio, { once: true });
         document.body.addEventListener('touchstart', initAudio, { once: true });
 
-        // Cart
         DOM.cartSummary.addEventListener('click', () => {
           if (calculateTotals().items > 0) {
             renderCartModal();
@@ -3085,27 +3077,22 @@ Erstellt: Herr El Makhoukhi`;
           if (calculateTotals().items > 0) resetCart();
         });
 
-        // Payment
         DOM.payBtn.addEventListener('click', openPaymentModal);
         DOM.givenAmount.addEventListener('input', processPayment);
         DOM.cancelPaymentBtn.addEventListener('click', () => closeModal(DOM.paymentModal));
         DOM.closePaymentBtn.addEventListener('click', () => closeModal(DOM.paymentModal));
         DOM.nextTransactionBtn.addEventListener('click', completeTransaction);
 
-        // Products
         DOM.addProductForm.addEventListener('submit', addProduct);
         $('#resetProductsBtn').addEventListener('click', resetProducts);
         $('#clearHistoryBtn').addEventListener('click', clearHistory);
 
-        // Inventory
         $('#copyListBtn').addEventListener('click', copyShoppingList);
         $('#printListBtn').addEventListener('click', () => window.print());
         $('#clearInventoryBtn').addEventListener('click', clearInventory);
 
-        // Export
         $('#exportBtn').addEventListener('click', exportData);
 
-        // History filters
         $$('.filter-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             $$('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -3114,7 +3101,6 @@ Erstellt: Herr El Makhoukhi`;
           });
         });
 
-        // Chart period
         $$('.period-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             $$('.period-btn').forEach(b => b.classList.remove('active'));
